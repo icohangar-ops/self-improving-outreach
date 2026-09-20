@@ -76,12 +76,12 @@ def test_adversary_critic_keeps_findings_binding():
 
 
 def test_adversary_critic_pins_brand_spelling():
-    assert "Cubiczan" in ADVERSARY_CRITIC_GUIDANCE
-    assert "CubicZan" not in ADVERSARY_CRITIC_GUIDANCE.replace(
-        "Fix CubicZan misspelling", ""
-    ) or True  # the word CubicZan may appear only as the thing being rejected
-    # The reject-token must be present (it is what the critic fixes).
-    assert "CubicZan" in ADVERSARY_CRITIC_GUIDANCE or "brand" in ADVERSARY_CRITIC_GUIDANCE.lower()
+    # The design doc lists "Cubiczan misspelling" as a required structural
+    # adversary check that "cannot be skipped" — so the critic's guidance
+    # must state the canonical spelling AND name the forbidden spelling,
+    # exactly once, as the reject-token.
+    assert "Brand spelling is Cubiczan (never CubicZan)" in ADVERSARY_CRITIC_GUIDANCE
+    assert ADVERSARY_CRITIC_GUIDANCE.count("CubicZan") == 1
 
 
 def test_system_context_keeps_drafter_guardrails():

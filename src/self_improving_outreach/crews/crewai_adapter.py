@@ -43,7 +43,7 @@ ADVERSARY_CRITIC_GUIDANCE = (
     "against weak claims, invented metrics, compliance and send risks, and "
     "overclaims (guarantee, already-sent, risk-free). Findings must change "
     "the body, not be summarized away. Return the hardened draft body only. "
-    "Brand spelling is Cubiczan. Pipeline Scout owns send."
+    "Brand spelling is Cubiczan (never CubicZan). Pipeline Scout owns send."
 )
 
 
