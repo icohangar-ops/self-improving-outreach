@@ -13,6 +13,8 @@ pinned here:
    deterministic critic in brand.py.
 """
 
+from types import SimpleNamespace
+
 from self_improving_outreach.brand import (
     BRAND,
     BRAND_MISSPELLINGS,
@@ -21,12 +23,28 @@ from self_improving_outreach.brand import (
     has_brand_misspelling,
     rewrite_brand_spelling,
 )
-from self_improving_outreach.crews import crewai_adapter
 from self_improving_outreach.crews.crewai_adapter import (
     ADVERSARY_CRITIC_GUIDANCE,
     OUTBOUND_CREW_CONTEXT,
-    crewai_available,
+    build_crew_plan,
 )
+from self_improving_outreach.models import Channel, Lead, ResearchBundle, ScoreResult
+from self_improving_outreach.stores.memory import MemoryStore
+
+
+def _plan():
+    """Build the real draft-mode crew plan through the production signature.
+
+    build_crew_plan describes the crew WITHOUT importing CrewAI, so this
+    runs anywhere the package installs — the rot check must never be
+    skipped for want of an optional dependency.
+    """
+    settings = SimpleNamespace(resolved_crewai_mode="draft")
+    lead = Lead(company="Northline Manufacturing", contact_name="Priya Shah",
+                title="VP Sales", industry="manufacturing")
+    research = ResearchBundle(query="northline", synthesis="Prefetched company brief.", source="mock")
+    score = ScoreResult(total=42.0, features={"industry_fit": 1.0}, weights={"industry_fit": 0.7})
+    return build_crew_plan(settings, lead, research, score, MemoryStore(), Channel.LINKEDIN, mode="draft")
 
 
 # ---------------------------------------------------------------------------
@@ -88,11 +106,7 @@ def test_outbound_crew_context_keeps_integrity_guardrails():
 
 
 def test_critic_agent_spec_rejects_the_full_rule_set():
-    from self_improving_outreach.crews.crewai_adapter import build_crew_plan
-
-    if not crewai_available():
-        return  # spec construction requires the crewai package
-    plan = build_crew_plan("draft")
+    plan = _plan()
     critic = next(a for a in plan.agents if a.key == "critic")
     assert "brand misspellings" in critic.goal
     assert "overclaims" in critic.goal
@@ -101,6 +115,13 @@ def test_critic_agent_spec_rejects_the_full_rule_set():
     # and must not claim the LinkedIn post happened.
     assert "CubicZan" in critic.task_description
     assert "Do not claim we posted to LinkedIn" in critic.task_description
+
+
+def test_draft_plan_includes_a_critic_stage_at_all():
+    # The rot check is only meaningful if the critic is actually in the
+    # plan — a refactor that drops the critic stage must fail here too.
+    keys = [a.key for a in _plan().agents]
+    assert "critic" in keys
 
 
 # ---------------------------------------------------------------------------
